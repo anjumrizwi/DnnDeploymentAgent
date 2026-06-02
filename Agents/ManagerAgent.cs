@@ -18,12 +18,38 @@ public class ManagerAgent
 
     public async Task<string> Deploy()
     {
-        await _git.CloneRepository();
+        var steps = new (string Name, Func<Task<string>> Action)[]
+        {
+            ("Clone repository",  _git.CloneRepository),
+            ("Setup database",    _sql.SetupForDnn),
+            ("Setup IIS",         _iis.SetupForDnn),
+        };
 
-        await _sql.CreateDatabase();
+        var results = new List<string>();
 
-        await _iis.CreateSite();
+        foreach (var (name, action) in steps)
+        {
+            Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Starting: {name}");
 
-        return "Deployment Completed";
+            try
+            {
+                string result = await action();
+                results.Add($"[OK] {name}: {result}");
+                Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Completed: {name}");
+            }
+            catch (Exception ex)
+            {
+                string failure = $"[FAIL] {name}: {ex.Message}";
+                results.Add(failure);
+                Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Failed: {name}");
+
+                // Abort — later steps depend on earlier ones:
+                // IIS needs the DB, the DB needs the repo config, etc.
+                results.Add("Deployment aborted — subsequent steps skipped.");
+                break;
+            }
+        }
+
+        return string.Join(Environment.NewLine, results);
     }
 }
