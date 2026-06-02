@@ -11,13 +11,30 @@ public class IisAgent
 
     public async Task<string> SetupForDnn()
     {
-        var results = new List<string>
-        {
-            await EnableWindowsFeatures(),
-            await CreateAppPool(),
-            await CreateWebsite(),
-            await SetFolderPermissions()
-        };
+        var results = new List<string>();
+
+        Console.WriteLine("Starting: Enable Windows features...");
+        var res1 = await EnableWindowsFeatures();
+        Console.WriteLine("EnableWindowsFeatures result: " + (string.IsNullOrWhiteSpace(res1) ? "(no output)" : res1));
+        results.Add(res1);
+
+        Console.WriteLine("Starting: Create application pool...");
+        var res2 = await CreateAppPool();
+        Console.WriteLine("CreateAppPool result: " + (string.IsNullOrWhiteSpace(res2) ? "(no output)" : res2));
+        results.Add(res2);
+
+        Console.WriteLine("Starting: Create website...");
+        var res3 = await CreateWebsite();
+        Console.WriteLine("CreateWebsite result: " + (string.IsNullOrWhiteSpace(res3) ? "(no output)" : res3));
+        results.Add(res3);
+
+        Console.WriteLine("Starting: Set folder permissions...");
+        var res4 = await SetFolderPermissions();
+        Console.WriteLine("SetFolderPermissions result: " + (string.IsNullOrWhiteSpace(res4) ? "(no output)" : res4));
+        results.Add(res4);
+
+        Console.WriteLine("All setup steps complete.");
+
         return string.Join(Environment.NewLine, results);
     }
 
@@ -156,6 +173,9 @@ public class IisAgent
         process.OutputDataReceived += (_, e) => { if (e.Data != null) output.AppendLine(e.Data); };
         process.ErrorDataReceived += (_, e) => { if (e.Data != null) errors.AppendLine(e.Data); };
 
+        Console.WriteLine("Executing PowerShell script:");
+        Console.WriteLine(script);
+
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
@@ -164,6 +184,17 @@ public class IisAgent
         process.StandardInput.Close();
 
         process.WaitForExit();
+
+        Console.WriteLine("PowerShell exited with code: " + process.ExitCode);
+        if (output.Length > 0)
+        {
+            Console.WriteLine("PowerShell output:\n" + output.ToString().Trim());
+        }
+
+        if (errors.Length > 0)
+        {
+            Console.Error.WriteLine("PowerShell errors:\n" + errors.ToString().Trim());
+        }
 
         return Task.FromResult(
             errors.Length > 0

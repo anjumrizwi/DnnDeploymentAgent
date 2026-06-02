@@ -20,14 +20,35 @@ public class SqlAgent
 
     public async Task<string> SetupForDnn()
     {
-        var results = new List<string>
-        {
-            await CreateDatabase(),
-            await ConfigureDatabase(),
-            await CreateLogin(),
-            await CreateDatabaseUser(),
-            await GrantPermissions()
-        };
+        var results = new List<string>();
+
+        Console.WriteLine("Starting: Create database...");
+        var r1 = await CreateDatabase();
+        Console.WriteLine("CreateDatabase result: " + (string.IsNullOrWhiteSpace(r1) ? "(no output)" : r1));
+        results.Add(r1);
+
+        Console.WriteLine("Starting: Configure database...");
+        var r2 = await ConfigureDatabase();
+        Console.WriteLine("ConfigureDatabase result: " + (string.IsNullOrWhiteSpace(r2) ? "(no output)" : r2));
+        results.Add(r2);
+
+        Console.WriteLine("Starting: Create login...");
+        var r3 = await CreateLogin();
+        Console.WriteLine("CreateLogin result: " + (string.IsNullOrWhiteSpace(r3) ? "(no output)" : r3));
+        results.Add(r3);
+
+        Console.WriteLine("Starting: Create database user...");
+        var r4 = await CreateDatabaseUser();
+        Console.WriteLine("CreateDatabaseUser result: " + (string.IsNullOrWhiteSpace(r4) ? "(no output)" : r4));
+        results.Add(r4);
+
+        Console.WriteLine("Starting: Grant permissions...");
+        var r5 = await GrantPermissions();
+        Console.WriteLine("GrantPermissions result: " + (string.IsNullOrWhiteSpace(r5) ? "(no output)" : r5));
+        results.Add(r5);
+
+        Console.WriteLine("Database setup steps complete.");
+
         return string.Join(Environment.NewLine, results);
     }
 
@@ -144,12 +165,31 @@ public class SqlAgent
         await using var conn = new SqlConnection(connString);
         await conn.OpenAsync();
 
+        Console.WriteLine($"[{DateTime.UtcNow:HH:mm:ss}] Executing SQL against '{conn.DataSource}' Database='{conn.Database}'");
+        Console.WriteLine("SQL:\n" + sql);
+
         await using var cmd = new SqlCommand(sql, conn);
 
         if (parameters != null)
+        {
+            Console.WriteLine("With parameters:");
             foreach (var (name, value) in parameters)
+            {
+                Console.WriteLine($"  {name} = {value}");
                 cmd.Parameters.AddWithValue(name, value);
+            }
+        }
 
-        await cmd.ExecuteNonQueryAsync();
+        try
+        {
+            var affected = await cmd.ExecuteNonQueryAsync();
+            Console.WriteLine($"SQL executed successfully, rows affected: {affected}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ERROR executing SQL: {ex.Message}");
+            Console.Error.WriteLine(ex.ToString());
+            throw;
+        }
     }
 }

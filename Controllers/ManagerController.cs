@@ -18,9 +18,9 @@ public class ManagerController : ControllerBase
     [HttpGet("run")]
     public async Task<IActionResult> Run()
     {
-        var result =
-            await _managerAgent.Deploy();
-
+        Console.WriteLine($"[{DateTime.UtcNow:O}] API: /api/manager/run called");
+        var result = await _managerAgent.Deploy();
+        Console.WriteLine($"[{DateTime.UtcNow:O}] API result length: {result?.Length ?? 0}");
         return Ok(result);
     }
 }

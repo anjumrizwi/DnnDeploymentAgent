@@ -24,13 +24,17 @@ namespace DnnDeploymentAgent.Controllers
         [HttpGet]
         public IActionResult Get()
         {
+            Console.WriteLine($"[{DateTime.UtcNow:O}] API: /api/test GET called");
             return Ok("DNN Deployment Agent Running");
         }
 
         [HttpGet("status")]
         public IActionResult Status()
         {
-            return Ok(_gitAgent.GetStatus());
+            Console.WriteLine($"[{DateTime.UtcNow:O}] API: /api/test/status called");
+            var status = _gitAgent.GetStatus();
+            Console.WriteLine($"GitAgent status: {status}");
+            return Ok(status);
         }
     }
 }

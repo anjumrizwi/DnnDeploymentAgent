@@ -19,15 +19,28 @@ public class GitAgent
         process.StartInfo.Arguments =
             $"clone {repo} {target}";
 
+        Console.WriteLine($"Starting git clone: {repo} -> {target}");
+        Console.WriteLine($"Running: git {process.StartInfo.Arguments}");
+
         process.Start();
 
         await process.WaitForExitAsync();
+
+        Console.WriteLine($"Git process exited with code: {process.ExitCode}");
+
+        if (process.ExitCode != 0)
+        {
+            Console.Error.WriteLine("Git clone failed");
+            return "ERROR: Git clone failed";
+        }
 
         return "Repository cloned";
     }
 
     public string GetStatus()
     {
-        return "Git Agent Ready";
+        var status = "Git Agent Ready";
+        Console.WriteLine($"Status: {status}");
+        return status;
     }
 }
